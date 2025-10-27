@@ -1,0 +1,16 @@
+Artificial Intelligence: An Overview
+
+Artificial Intelligence (AI) is the branch of computer science concerned with making computers behave like humans. The field was founded on the claim that human intelligence can be so precisely described that a machine can be made to simulate it.
+
+AI has become increasingly sophisticated in recent years, driven by advances in machine learning, deep learning, and neural networks. These technologies allow computers to process information, recognize patterns, and make decisions in ways that mimic human cognition.
+
+Key areas of AI include:
+- Machine Learning: Systems that improve their performance through experience
+- Natural Language Processing: Understanding and generating human language
+- Computer Vision: Interpreting and understanding visual information
+- Robotics: Creating machines that can manipulate the physical world
+
+AI applications are everywhere today, from voice assistants like Siri and Alexa, to recommendation systems on streaming platforms, to autonomous vehicles. The technology continues to evolve rapidly, with new breakthroughs happening regularly.
+
+While AI offers tremendous benefits, it also raises important ethical questions about privacy, employment, and the future of human decision-making.
+
