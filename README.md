@@ -14,14 +14,14 @@ A Retrieval-Augmented Generation (RAG) system that answers questions based on yo
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd Agentic_RAG
+git clone https://github.com/mfazelnia/Agentic-RAG.git
+cd Agentic-RAG
 ```
 
-2. Create a virtual environment:
+2. Create a virtual environment (recommended):
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv your_venv_name
+source your_venv_name/bin/activate  # On Windows: your_venv_name\Scripts\activate
 ```
 
 3. Install dependencies:
