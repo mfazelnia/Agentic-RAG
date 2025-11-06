@@ -97,7 +97,16 @@ If the query is complex (e.g., comparing multiple concepts, multi-part questions
         Returns:
             Dictionary with completeness assessment
         """
-        context_preview = "\n".join([doc['text'][:200] for doc in retrieved_docs[:3]])
+        if not retrieved_docs:
+            return {
+                "is_complete": False,
+                "confidence": "low",
+                "missing_aspects": ["No documents retrieved"],
+                "needs_refinement": True,
+                "refinement_query": query
+            }
+        
+        context_preview = "\n".join([doc.get('text', '')[:200] for doc in retrieved_docs[:3]])
         
         reflection_prompt = f"""Evaluate if this answer fully addresses the query. Consider:
 1. Does it answer all parts of the question?
@@ -156,6 +165,16 @@ Respond in JSON format:
         Returns:
             Generated answer
         """
+        if not contexts:
+            return "No relevant documents found to answer this question."
+        
+        # Ensure contexts and sources have the same length
+        if len(contexts) != len(sources):
+            # Use the shorter length to avoid index errors
+            min_len = min(len(contexts), len(sources))
+            contexts = contexts[:min_len]
+            sources = sources[:min_len]
+        
         context_text = "\n\n".join([
             f"Context {i+1} (from {sources[i]}):\n{ctx}"
             for i, ctx in enumerate(contexts)
@@ -222,26 +241,31 @@ Answer:"""
         # Step 2: Execute searches
         queries_to_search = plan.get('sub_queries', []) if plan.get('needs_decomposition') else [query]
         
+        # Ensure we have at least one query to search
+        if not queries_to_search:
+            queries_to_search = [query]
+        
         for search_query in queries_to_search:
             if verbose:
                 print(f"Searching: {search_query}")
             docs = self._search_and_retrieve(search_query, k=k)
             all_retrieved_docs.extend(docs)
-            all_sources.update([doc['source'] for doc in docs])
+            all_sources.update([doc.get('source', 'unknown') for doc in docs])
         
         # Remove duplicates while preserving order
         seen_texts = set()
         unique_docs = []
         for doc in all_retrieved_docs:
-            if doc['text'] not in seen_texts:
-                seen_texts.add(doc['text'])
+            doc_text = doc.get('text', '')
+            if doc_text and doc_text not in seen_texts:
+                seen_texts.add(doc_text)
                 unique_docs.append(doc)
         
         all_retrieved_docs = unique_docs[:k*2]  # Limit total docs
         
         # Step 3: Generate initial answer
-        contexts = [doc['text'] for doc in all_retrieved_docs]
-        sources_list = [doc['source'] for doc in all_retrieved_docs]
+        contexts = [doc.get('text', '') for doc in all_retrieved_docs if doc.get('text')]
+        sources_list = [doc.get('source', 'unknown') for doc in all_retrieved_docs if doc.get('text')]
         
         answer = self._generate_answer(query, contexts, sources_list, iteration=0)
         iterations_used.append({
@@ -270,18 +294,19 @@ Answer:"""
                 print(f"Refining search: {refinement_query}")
             
             # Search for additional information
-            additional_docs = self._search_and_retrieve(refinement_query, k=k//2)
+            additional_docs = self._search_and_retrieve(refinement_query, k=max(1, k//2))
             
             # Add new docs if they're different
             for doc in additional_docs:
-                if doc['text'] not in seen_texts:
-                    seen_texts.add(doc['text'])
+                doc_text = doc.get('text', '')
+                if doc_text and doc_text not in seen_texts:
+                    seen_texts.add(doc_text)
                     all_retrieved_docs.append(doc)
-                    all_sources.add(doc['source'])
+                    all_sources.add(doc.get('source', 'unknown'))
             
             # Regenerate answer with all context
-            contexts = [doc['text'] for doc in all_retrieved_docs[:k*2]]
-            sources_list = [doc['source'] for doc in all_retrieved_docs[:k*2]]
+            contexts = [doc.get('text', '') for doc in all_retrieved_docs[:k*2] if doc.get('text')]
+            sources_list = [doc.get('source', 'unknown') for doc in all_retrieved_docs[:k*2] if doc.get('text')]
             
             answer = self._generate_answer(query, contexts, sources_list, iteration=iteration)
             iterations_used.append({
