@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'src'))
 from src.document_loader import load_documents, chunk_documents
 from src.vector_store import VectorStore
 from src.simple_rag import SimpleRAG
+from src.agentic_rag import AgenticRAG
 
 
 def main():
@@ -48,16 +49,20 @@ def main():
         print(f"Error building vector store: {e}")
         return
     
-    # Initialize RAG system
+    # Initialize RAG system (use agentic by default)
     try:
-        rag = SimpleRAG(vector_store)
+        rag = AgenticRAG(vector_store, max_iterations=3)
+        print("Using agentic RAG mode (with planning, iteration, and reflection)")
     except Exception as e:
         print(f"Error initializing RAG: {e}")
         print("Make sure you have a .env file with OPENAI_API_KEY set")
         return
     
     # Interactive Q&A loop
-    print("Ready! Ask questions about the documents. Type 'exit' to quit.\n")
+    print("\nReady! Ask questions about the documents.")
+    print("Type 'exit' to quit, 'verbose' to toggle detailed output.\n")
+    
+    verbose = False
     
     while True:
         try:
@@ -67,15 +72,30 @@ def main():
                 print("Goodbye!")
                 break
             
+            if query.lower() == 'verbose':
+                verbose = not verbose
+                print(f"Verbose mode: {'ON' if verbose else 'OFF'}\n")
+                continue
+            
             if not query:
                 continue
             
-            print("\nSearching...")
-            result = rag.query(query, k=3)
+            if verbose:
+                print("\nProcessing query...")
+            else:
+                print("\nSearching...")
+            
+            result = rag.query(query, k=5, verbose=verbose)
             
             print(f"\nAnswer: {result['answer']}")
+            
             if result['sources']:
                 print(f"\nSources: {', '.join(result['sources'])}")
+            
+            if verbose and result.get('iterations'):
+                print(f"\nIterations used: {len(result['iterations'])}")
+                print(f"Total documents retrieved: {result.get('total_docs_used', 0)}")
+            
             print()
             
         except KeyboardInterrupt:
